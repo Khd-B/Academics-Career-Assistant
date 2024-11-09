@@ -1,6 +1,6 @@
 import streamlit as st
 import sqlite3
-from transformers import T5Tokenizer, T5ForConditionalGeneration
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from fpdf import FPDF
 
 # --- Database setup ---
@@ -30,10 +30,12 @@ c.execute('''
     )
 ''')
 
-# --- Load the FLAN-T5 Model ---
-model_name = "google/flan-t5-small"  # The exact FLAN-T5 Small model
-tokenizer = T5Tokenizer.from_pretrained(model_name)
-model = T5ForConditionalGeneration.from_pretrained(model_name)
+# --- Model Setup ---
+MODEL_NAME = "distilbert/distilgpt2"  # Explicit model name used here
+
+# Load the model and tokenizer
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)  # Using distilbert/distilgpt2
+model = AutoModelForCausalLM.from_pretrained(MODEL_NAME)  # Using distilbert/distilgpt2
 
 # --- Streamlit App ---
 st.title("Your Academics & Career Assistant")
@@ -196,38 +198,23 @@ if submit_button:
         age_group, marital_status, dependants, education_level, ",".join(fields_of_study),
         employment_status, years_of_experience, monthly_earnings, ",".join(hard_skill_checkboxes),
         ",".join(soft_skill_checkboxes), ",".join(language_checkboxes), ",".join(career_interests),
-        other_career if "Others" in career_interests else None, work_type, work_schedule, future_aspirations
+        other_career, work_type, work_schedule, future_aspirations
     ))
-
-    # Commit and close the database connection
     conn.commit()
+    st.success("Your responses have been submitted successfully!")
 
-    # Prepare input for the model
-    user_input = f"Age Group: {age_group}, Marital Status: {marital_status}, Education: {education_level}, Employment: {employment_status}, Career Interests: {', '.join(career_interests)}"
+# -- Optional PDF Generation or Text Generation Based on User Data --
 
-    # Generate recommendation using FLAN-T5 model
-    inputs = tokenizer(user_input, return_tensors="pt")
-    outputs = model.generate(inputs['input_ids'], max_length=100)
-    recommendation = tokenizer.decode(outputs[0], skip_special_tokens=True)
+# Generate and display text using the model (For example: Career advice)
+input_prompt = f"Generate career advice based on the following details: Age group: {age_group}, Marital Status: {marital_status}, Career Interests: {', '.join(career_interests)}"
+inputs = tokenizer(input_prompt, return_tensors="pt")
 
-    # Show the recommendations
-    st.subheader("Recommendations")
-    st.write(recommendation)
+# Generate response using the model
+outputs = model.generate(inputs['input_ids'], max_length=100)
 
-    # Mark form as submitted
-    st.session_state.form_submitted = True
-    st.balloons()
+# Decode the output into text
+generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-# PDF generation function
-def generate_pdf():
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="User Responses and Career Recommendations", ln=True, align="C")
-    pdf.ln(10)
-    pdf.multi_cell(0, 10, txt=user_input)
-    pdf.multi_cell(0, 10, txt=f"Recommendation: {recommendation}")
-    pdf.output("user_recommendations.pdf")
-
-if submit_button:
-    generate_pdf()
+# Display the generated text
+st.subheader("Career Recommendation:")
+st.write(generated_text)
