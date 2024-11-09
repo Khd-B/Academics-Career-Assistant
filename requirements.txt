@@ -1,0 +1,5 @@
+streamlit
+transformers
+sqlite3
+pandas
+requests
