@@ -1,6 +1,5 @@
 streamlit
+sqlite3
 transformers
-torch
-pandas
-requests
 fpdf
+torch
