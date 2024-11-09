@@ -1,5 +1,8 @@
 streamlit
 transformers
+torch
 sqlite3
 pandas
+scikit-learn
+sqlalchemy
 requests
